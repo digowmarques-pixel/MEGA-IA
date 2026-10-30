@@ -61,6 +61,7 @@ export function CamPhone({ code }: { code: string }) {
       setData(j.scene as BlockingData);
       const st = j.state ?? {};
       sync.current = { t: st.t ?? 0, playing: !!st.playing, recording: !!st.recording, duration: (j.scene as BlockingData).duration, at: performance.now() };
+      setUi({ t: st.t ?? 0, playing: !!st.playing, recording: !!st.recording, duration: (j.scene as BlockingData).duration });
     }).catch((e) => setError(e.message));
     const es = new EventSource(`/api/cam/${code}/stream?role=phone`);
     es.addEventListener("state", (e) => {
@@ -68,7 +69,13 @@ export function CamPhone({ code }: { code: string }) {
       sync.current = { t: st.t, playing: st.playing, recording: st.recording, duration: st.duration, at: performance.now() };
       setUi({ t: st.t, playing: st.playing, recording: st.recording, duration: st.duration });
     });
-    es.addEventListener("scene", (e) => setData(JSON.parse((e as MessageEvent).data)));
+    es.addEventListener("scene", (e) => {
+      const d = JSON.parse((e as MessageEvent).data) as BlockingData;
+      setData(d);
+      // a duração da cena pode ter mudado no computador
+      sync.current = { ...sync.current, duration: d.duration };
+      setUi((u) => ({ ...u, duration: d.duration }));
+    });
     es.addEventListener("closed", () => setError("O computador encerrou o pareamento."));
     es.onerror = () => {};
     navigator.xr?.isSessionSupported?.("immersive-ar").then(setArOk).catch(() => setArOk(false));

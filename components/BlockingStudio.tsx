@@ -696,9 +696,21 @@ export function BlockingStudio() {
             <div className="label">Lente (em {time.toFixed(1)}s)</div>
             <div className="mb-3 flex flex-wrap gap-1">{LENSES.map((l) => <button key={l} onClick={() => setLensAtTime(l)} className={`chip ${Math.round(cam.lens) === l ? "chip-active" : ""}`}>{l}mm</button>)}</div>
             <div className="label">Keyframes da câmera</div>
-            <div className="mb-4 flex flex-wrap gap-1">{data.camera.map((k, i) => (
-              <span key={i} className="chip"><button onClick={() => setTime(k.t)}>{k.t.toFixed(1)}s · {k.lens}mm</button>{data.camera.length > 1 && <button className="hover:text-red-400" onClick={() => setData((d) => ({ ...d, camera: d.camera.filter((_, j) => j !== i) }))}>×</button>}</span>
-            ))}</div>
+            {data.camera.length > 12 ? (
+              // take do celular: um keyframe por quadro, não faz sentido listar um a um
+              <div className="mb-4 flex items-center gap-2 rounded-lg bg-card px-2.5 py-2 text-xs">
+                <Smartphone className="h-3.5 w-3.5 text-mega-yellow" />
+                <span className="flex-1">Take do celular · {data.camera.length} quadros · {data.camera[0].lens}mm</span>
+                <button className="text-muted hover:text-red-400" title="Apaga o take e volta para dois keyframes (início e fim)" onClick={() => setData((d) => {
+                  const ks = [...d.camera].sort((x, y) => x.t - y.t);
+                  return { ...d, camera: [ks[0], ks[ks.length - 1]].map(({ q: _q, ...k }) => k) };
+                })}>limpar take</button>
+              </div>
+            ) : (
+              <div className="mb-4 flex flex-wrap gap-1">{data.camera.map((k, i) => (
+                <span key={i} className="chip"><button onClick={() => setTime(k.t)}>{k.t.toFixed(1)}s · {k.lens}mm</button>{data.camera.length > 1 && <button className="hover:text-red-400" onClick={() => setData((d) => ({ ...d, camera: d.camera.filter((_, j) => j !== i) }))}>×</button>}</span>
+              ))}</div>
+            )}
 
             <div className="label">Cenário</div>
             <div className="mb-4 grid grid-cols-2 gap-2 text-xs">
