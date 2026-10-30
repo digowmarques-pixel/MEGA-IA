@@ -1,10 +1,12 @@
 {
-  "name": "ai-hub",
+  "name": "mega-hub-ai",
   "version": "1.0.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.mjs",
+    "start:tunnel": "node server.mjs --tunnel",
+    "start:next": "next start -p 3100",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -12,6 +14,7 @@
     "@modelcontextprotocol/sdk": "^1.32.2",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
+    "ffmpeg-static": "^5.3.0",
     "jose": "^6.2.14",
     "jszip": "^3.10.2",
     "lucide-react": "^1.65.0",
@@ -20,6 +23,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "recharts": "^3.10.1",
+    "selfsigned": "^5.5.0",
     "three": "^0.170.0",
     "zod": "^4.6.7"
   },
@@ -36,5 +40,8 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=20.9"
+  }
 }

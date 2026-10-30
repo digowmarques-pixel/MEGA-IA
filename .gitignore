@@ -5,3 +5,8 @@ data/media
 .env
 .env.local
 next-env.d.ts
+tsconfig.tsbuildinfo
+data/certs
+cloudflared
+cloudflared.exe
+*.zip

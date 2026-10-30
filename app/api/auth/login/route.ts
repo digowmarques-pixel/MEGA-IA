@@ -24,7 +24,8 @@ export async function POST(req: Request) {
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // só "secure" quando a conexão é HTTPS: no computador local (http://localhost ou IP da rede) o cookie precisa funcionar em HTTP
+    secure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === "1" : (req.headers.get("x-forwarded-proto") ?? new URL(req.url).protocol.replace(":", "")) === "https",
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });

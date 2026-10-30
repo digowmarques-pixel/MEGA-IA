@@ -6,10 +6,39 @@ import { mediaDir } from "./media";
 
 const run = promisify(execFile);
 let ffmpegOk: boolean | null = null;
+let ffmpegBin = "ffmpeg";
+
+/** FFMPEG_PATH > cópia embutida (ffmpeg-static, funciona no Windows sem instalar) > ffmpeg do sistema. */
+async function resolveFfmpeg() {
+  const candidates: string[] = [];
+  if (process.env.FFMPEG_PATH) candidates.push(process.env.FFMPEG_PATH);
+  try {
+    const mod = (await import("ffmpeg-static")) as unknown as { default?: string | null };
+    if (mod.default) candidates.push(mod.default);
+  } catch { /* sem cópia embutida */ }
+  candidates.push("ffmpeg");
+  for (const c of candidates) {
+    if (await run(c, ["-version"]).then(() => true).catch(() => false)) { ffmpegBin = c; return true; }
+  }
+  return false;
+}
 
 export async function hasFfmpeg() {
-  if (ffmpegOk === null) ffmpegOk = await run("ffmpeg", ["-version"]).then(() => true).catch(() => false);
+  if (ffmpegOk === null) ffmpegOk = await resolveFfmpeg();
   return ffmpegOk;
+}
+
+/** Lê largura, altura e duração da saída do próprio ffmpeg (dispensa o ffprobe, que a cópia embutida não traz). */
+async function probe(file: string) {
+  const r = await run(ffmpegBin, ["-hide_banner", "-i", file]).catch((e: { stderr?: string }) => ({ stderr: e.stderr ?? "" }));
+  const err = String(r.stderr ?? "");
+  const d = err.match(/Duration:\s*(\d+):(\d+):([\d.]+)/);
+  const v = err.match(/Video:.*?,\s*(\d{2,5})x(\d{2,5})/);
+  return {
+    width: v ? Number(v[1]) : null,
+    height: v ? Number(v[2]) : null,
+    duration: d ? Number(d[1]) * 3600 + Number(d[2]) * 60 + Number(d[3]) : null,
+  };
 }
 
 /**
@@ -23,13 +52,9 @@ export async function toMp4WithThumb(input: string, base: string, opts: { fps?: 
   const fps = opts.fps ?? 24;
   // Cada quadro da animação foi gravado uma única vez; os timestamps do navegador seguem o relógio
   // (e atrasam em máquinas lentas). Re-temporiza: quadro N = N/fps → duração exata da cena.
-  await run("ffmpeg", ["-y", "-i", input, "-vf", `setpts=N/(${fps}*TB)`, "-r", String(fps), "-fps_mode", "cfr", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", out], { timeout: 120_000 });
-  await run("ffmpeg", ["-y", "-ss", "0.3", "-i", out, "-frames:v", "1", "-q:v", "3", thumb], { timeout: 30_000 }).catch(() => null);
-  const probe = await run("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration", "-of", "json", out]).catch(() => null);
-  let width: number | null = null, height: number | null = null, duration: number | null = null;
-  if (probe) {
-    const j = JSON.parse(probe.stdout) as { streams?: { width: number; height: number }[]; format?: { duration?: string } };
-    width = j.streams?.[0]?.width ?? null; height = j.streams?.[0]?.height ?? null; duration = Number(j.format?.duration) || null;
-  }
+  await hasFfmpeg();
+  await run(ffmpegBin, ["-y", "-i", input, "-vf", `setpts=N/(${fps}*TB)`, "-r", String(fps), "-fps_mode", "cfr", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-an", out], { timeout: 120_000 });
+  await run(ffmpegBin, ["-y", "-ss", "0.3", "-i", out, "-frames:v", "1", "-q:v", "3", thumb], { timeout: 30_000 }).catch(() => null);
+  const { width, height, duration } = await probe(out);
   return { url: `/api/media/${base}.mp4`, thumbUrl: fs.existsSync(thumb) ? `/api/media/${base}.jpg` : null, width, height, duration };
 }

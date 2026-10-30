@@ -237,7 +237,7 @@ export function BlockingStudio() {
   }); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------- celular como câmera virtual ----------
-  const [phone, setPhone] = useState<{ code: string; qr: string; url: string } | null>(null);
+  const [phone, setPhone] = useState<{ code: string; qr: string; url: string; urls: string[] } | null>(null);
   const [phoneOnline, setPhoneOnline] = useState(false);
   const [follow, setFollow] = useState(true);
   const [smooth, setSmooth] = useState(0.5);
@@ -299,10 +299,10 @@ export function BlockingStudio() {
 
   async function connectPhone() {
     try {
-      const r = await api<{ code: string }>("/api/cam", { method: "POST", json: { scene: data, state: { t: time, playing, duration: data.duration } } });
-      const url = `${window.location.origin}/cam/${r.code}`;
-      const qr = await QRCode.toDataURL(url, { margin: 1, width: 240 });
-      setPhone({ code: r.code, qr, url });
+      const r = await api<{ code: string; phoneUrls?: string[] }>("/api/cam", { method: "POST", json: { scene: data, state: { t: time, playing, duration: data.duration } } });
+      const urls = (r.phoneUrls?.length ? r.phoneUrls : [window.location.origin]).map((u) => `${u}/cam/${r.code}`);
+      const qr = await QRCode.toDataURL(urls[0], { margin: 1, width: 240 });
+      setPhone({ code: r.code, qr, url: urls[0], urls });
     } catch (e) { toast("err", e instanceof Error ? e.message : "Falha ao gerar o pareamento"); }
   }
   function disconnectPhone() {
@@ -663,6 +663,14 @@ export function BlockingStudio() {
                       <img src={phone.qr} alt="QR code para abrir no celular" className="h-36 w-36 rounded-md bg-white p-1" />
                       <div className="font-mono text-lg font-black tracking-[0.25em] text-mega-yellow">{phone.code}</div>
                       <p className="text-center text-[10.5px] text-muted">Aponte a câmera do celular para o QR ou abra <span className="break-all text-soft">{phone.url}</span></p>
+                      {phone.url.startsWith("https://") && /\/\/\d+\.\d+\.\d+\.\d+:/.test(phone.url) && (
+                        <p className="text-center text-[10.5px] text-muted">Celular na mesma rede Wi-Fi. Na primeira vez ele avisa que a conexão não é particular: toque em <b className="text-soft">Avançado → Continuar</b>.</p>
+                      )}
+                      {phone.urls.length > 1 && (
+                        <select className="input !py-1 text-[10.5px]" value={phone.url} onChange={async (e) => { const url = e.target.value; setPhone({ ...phone, url, qr: await QRCode.toDataURL(url, { margin: 1, width: 240 }) }); }}>
+                          {phone.urls.map((u) => <option key={u} value={u}>{u.includes("trycloudflare") ? "Túnel (qualquer rede)" : u.replace(/\/cam\/.*/, "")}</option>)}
+                        </select>
+                      )}
                     </div>
                   )}
                   <div className="flex items-center gap-1.5 text-[11px]"><span className={`h-2 w-2 rounded-full ${phoneOnline ? "bg-mega-yellow" : "bg-line-strong"}`} />{phoneOnline ? `Conectado${live.current?.mode ? ` · ${live.current.mode}` : ""}` : "Aguardando o celular…"}</div>
