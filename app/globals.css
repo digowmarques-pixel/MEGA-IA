@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #000000;
+  --color-base: #070707;
+  --color-panel: #0e0e0e;
+  --color-card: #151515;
+  --color-raised: #1c1c1c;
+  --color-line: #262626;
+  --color-line-strong: #353535;
+  --color-muted: #8a8a8a;
+  --color-soft: #b9b9b9;
+  --color-mega-orange: #f7981d;
+  --color-mega-amber: #fdc010;
+  --color-mega-yellow: #ffdf15;
+  --font-sans: "Montserrat", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "Montserrat", "Arial Black", "Segoe UI", sans-serif;
+}
+
+:root { color-scheme: dark; }
+html, body { height: 100%; background: var(--color-ink); color: #fff; }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
+/* faixa assinatura da marca (laranja → âmbar → amarelo) */
+.mega-stripes {
+  background: linear-gradient(105deg, var(--color-mega-orange) 0 33.3%, var(--color-mega-amber) 33.3% 66.6%, var(--color-mega-yellow) 66.6% 100%);
+}
+.mega-gradient-text {
+  background: linear-gradient(90deg, var(--color-mega-orange), var(--color-mega-yellow));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+* { scrollbar-width: thin; scrollbar-color: #333 transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #2c2c2c; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
+
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed select-none; }
+@utility btn-primary { @apply btn bg-mega-yellow text-black hover:bg-mega-amber active:scale-[.98]; }
+@utility btn-ghost { @apply btn text-soft hover:bg-raised hover:text-white; }
+@utility btn-outline { @apply btn border border-line-strong text-white hover:border-mega-amber hover:text-mega-yellow; }
+@utility btn-danger { @apply btn text-red-400 hover:bg-red-500/10; }
+@utility input { @apply w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-white placeholder:text-muted outline-none transition focus:border-mega-amber/70 focus:ring-2 focus:ring-mega-amber/15; }
+@utility label { @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted; }
+@utility card { @apply rounded-xl border border-line bg-panel; }
+@utility chip { @apply inline-flex items-center gap-1 rounded-md border border-line bg-card px-2 py-0.5 text-[11px] font-medium text-soft; }
+@utility chip-active { @apply border-mega-amber/60 bg-mega-yellow/10 text-mega-yellow; }
